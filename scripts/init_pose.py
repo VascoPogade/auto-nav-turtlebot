@@ -5,6 +5,8 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 
+import threading
+
 
 class Velocity:
     def __init__(self, angular, linear):
@@ -29,15 +31,13 @@ class Angular:
 def update_twist(velocity, publisher):
     twist = Twist()
 
+    twist.linear.x = velocity.linear.x
     twist.linear.y = velocity.linear.y
     twist.linear.z = velocity.linear.z
 
     twist.angular.x = velocity.angular.x
     twist.angular.y = velocity.angular.y
     twist.angular.z = velocity.angular.z
-
-    # Delay
-    rospy.sleep(1)
 
     publisher.publish(twist)
     print("Velocity changed!")
@@ -72,15 +72,13 @@ cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 init_msg = PoseWithCovarianceStamped()
 init_msg.header.frame_id = "map"
 
-init_msg.pose.pose.position.x = -1.97
-init_msg.pose.pose.position.y = -0.43
+init_msg.pose.pose.position.x = 1.95
+init_msg.pose.pose.position.y = 0.43
 init_msg.pose.pose.orientation.x = 0.0
 init_msg.pose.pose.orientation.y = 0.0
-init_msg.pose.pose.orientation.z = 0.00
-init_msg.pose.pose.orientation.w = 0.99
-init_msg.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                            0.06853892326654787]
+init_msg.pose.pose.orientation.z = 0.39
+init_msg.pose.pose.orientation.w = 0.91
+init_msg.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
 
 # Delay
 rospy.sleep(1)
@@ -93,19 +91,25 @@ rospy.loginfo("initial pose is set")
 current_loc = rospy.wait_for_message('/odom', Odometry)
 rospy.sleep(1)
 
-ang = Angular(z=0.3)
-lin = Linear()
-vel = Velocity(angular=ang, linear=lin)
-update_twist(vel, cmd_vel_pub)
-
-rospy.sleep(2)
 turned = False
 
-while not turned:
-    odom2 = rospy.wait_for_message('/odom', Odometry)
-    if are_odoms_equal(current_loc, odom2, tolerance=0.02):
-        ang = Angular()
+def turn():
+    while not turned:
+        rospy.sleep(1)
+        ang = Angular(z=0.5)
         lin = Linear()
         vel = Velocity(angular=ang, linear=lin)
         update_twist(vel, cmd_vel_pub)
+    print("Initial turn done!")
+
+my_thread = threading.Thread(target=turn)
+
+my_thread.start()
+
+rospy.sleep(3)
+while not turned:
+    odom2 = rospy.wait_for_message('/odom', Odometry)
+    if are_odoms_equal(current_loc, odom2, tolerance=0.02):
         turned = True
+
+print("Inital pose done!")
