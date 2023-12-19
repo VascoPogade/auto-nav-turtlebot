@@ -4,15 +4,14 @@ import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
-
 import threading
-
+import argparse
+import yaml
 
 class Velocity:
     def __init__(self, angular, linear):
         self.angular = angular
         self.linear = linear
-
 
 class Linear:
     def __init__(self, x=0, y=0, z=0):
@@ -20,13 +19,16 @@ class Linear:
         self.y = y
         self.z = z
 
-
 class Angular:
     def __init__(self, x=0, y=0, z=0):
         self.x = x
         self.y = y
         self.z = z
 
+def load_yaml_file(file_path):
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    return data
 
 def update_twist(velocity, publisher):
     twist = Twist()
@@ -43,73 +45,72 @@ def update_twist(velocity, publisher):
     print("Velocity changed!")
 
 def are_odoms_equal(odom1, odom2, tolerance=0.2):
-    """
-    Check if two odom objects are equal within a specified tolerance.
-
-    Parameters:
-    - odom1: The first odom object.
-    - odom2: The second odom object.
-    - tolerance: The allowed difference in coordinates.
-
-    Returns:
-    - True if the odom objects are equal within the specified tolerance, False otherwise.
-    """
-
-    # Check if the coordinates are within the allowed tolerance
     x_diff = abs(odom1.pose.pose.orientation.x - odom2.pose.pose.orientation.x)
     y_diff = abs(odom1.pose.pose.orientation.y - odom2.pose.pose.orientation.y)
     z_diff = abs(odom1.pose.pose.orientation.z - odom2.pose.pose.orientation.z)
 
     return x_diff <= tolerance and y_diff <= tolerance and z_diff <= tolerance
 
+def main():
+    parser = argparse.ArgumentParser(description='Initialize pose and perform initial turn')
+    parser.add_argument('yaml_file', type=str, help='Path to YAML file')
 
-# Node initialization
-rospy.init_node('init_pose')
-initialpose_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=1)
-cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+    args = parser.parse_args()
+    yaml_file_path = args.yaml_file
 
-# Construct message
-init_msg = PoseWithCovarianceStamped()
-init_msg.header.frame_id = "map"
+    # Load values from YAML file
+    yaml_data = load_yaml_file(yaml_file_path)
 
-init_msg.pose.pose.position.x = 1.95
-init_msg.pose.pose.position.y = 0.43
-init_msg.pose.pose.orientation.x = 0.0
-init_msg.pose.pose.orientation.y = 0.0
-init_msg.pose.pose.orientation.z = 0.39
-init_msg.pose.pose.orientation.w = 0.91
-init_msg.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853892326654787]
+    # Node initialization
+    rospy.init_node('init_pose')
+    initialpose_pub = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=1)
+    cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 
-# Delay
-rospy.sleep(1)
+    # Construct message
+    init_msg = PoseWithCovarianceStamped()
+    init_msg.header.frame_id = "map"
 
-# Publish message
-rospy.loginfo("setting initial pose")
-initialpose_pub.publish(init_msg)
-rospy.loginfo("initial pose is set")
+    init_msg.pose.pose.position.x = yaml_data['position']['x']
+    init_msg.pose.pose.position.y = yaml_data['position']['y']
+    init_msg.pose.pose.orientation.x = yaml_data['orientation']['x']
+    init_msg.pose.pose.orientation.y = yaml_data['orientation']['y']
+    init_msg.pose.pose.orientation.z = yaml_data['orientation']['z']
+    init_msg.pose.pose.orientation.w = yaml_data['orientation']['w']
+    init_msg.pose.covariance = yaml_data['covariance']
 
-current_loc = rospy.wait_for_message('/odom', Odometry)
-rospy.sleep(1)
+    # Delay
+    rospy.sleep(1)
 
-turned = False
+    # Publish message
+    rospy.loginfo("Setting initial pose")
+    initialpose_pub.publish(init_msg)
+    rospy.loginfo("Initial pose is set")
 
-def turn():
+    current_loc = rospy.wait_for_message('/odom', Odometry)
+    rospy.sleep(1)
+
+    turned = False
+
+    def turn():
+        while not turned:
+            rospy.sleep(1)
+            ang = Angular(z=0.5)
+            lin = Linear()
+            vel = Velocity(angular=ang, linear=lin)
+            update_twist(vel, cmd_vel_pub)
+        print("Initial turn done!")
+
+    my_thread = threading.Thread(target=turn)
+    my_thread.start()
+
+    rospy.sleep(3)
+
     while not turned:
-        rospy.sleep(1)
-        ang = Angular(z=0.5)
-        lin = Linear()
-        vel = Velocity(angular=ang, linear=lin)
-        update_twist(vel, cmd_vel_pub)
-    print("Initial turn done!")
+        odom2 = rospy.wait_for_message('/odom', Odometry)
+        if are_odoms_equal(current_loc, odom2, tolerance=0.02):
+            turned = True
 
-my_thread = threading.Thread(target=turn)
+    print("Initial pose done!")
 
-my_thread.start()
-
-rospy.sleep(3)
-while not turned:
-    odom2 = rospy.wait_for_message('/odom', Odometry)
-    if are_odoms_equal(current_loc, odom2, tolerance=0.02):
-        turned = True
-
-print("Inital pose done!")
+if __name__ == "__main__":
+    main()
