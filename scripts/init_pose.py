@@ -98,6 +98,8 @@ def main():
             lin = Linear()
             vel = Velocity(angular=ang, linear=lin)
             update_twist(vel, cmd_vel_pub)
+        vel.angular.z=0
+        update_twist(vel, cmd_vel_pub)
         print("Initial turn done!")
 
     my_thread = threading.Thread(target=turn)
