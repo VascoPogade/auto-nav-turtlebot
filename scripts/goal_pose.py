@@ -3,6 +3,7 @@
 import rospy
 import actionlib
 import sys
+import argparse
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatusArray
 
@@ -51,11 +52,19 @@ def move_to_goal(pos_x, pos_y, ori_z, ori_w):
         rospy.loginfo(nav_client.get_result())
 
 
-# Check if args were entered
-if len(sys.argv) != 5:
-    print("Usage: rosrun auto_nav goal_pose.py <pos_x> <pos_y> <ori_z> <ori_w>")
-    sys.exit(1)
-else:
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Navigate robot to certain goal')
+    parser.add_argument('pos_x', type=float, help='X coordinate of initial position')
+    parser.add_argument('pos_y', type=float, help='Y coordinate of initial position')
+    parser.add_argument('ori_z', type=float, help='Z value of initial orientation')
+    parser.add_argument('ori_w', type=float, help='W value of initial orientation')
+
+    args = parser.parse_args()
+    pos_x = args.pos_x
+    pos_y = args.pos_y
+    ori_z = args.ori_z
+    ori_w = args.ori_w
+
     rospy.init_node('goal_pose')
     pos_x, pos_y, ori_z, ori_w = map(float, sys.argv[1:5])
     print("waiting for status!")
