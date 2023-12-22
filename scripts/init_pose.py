@@ -87,8 +87,13 @@ def main():
 
     turned = False
 
-    # Specify the path to your YAML file
-    config_path = os.path.abspath('config.yaml')
+    current_script_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Navigate to the parent directory (one level above)
+    parent_directory = os.path.abspath(os.path.join(current_script_directory, '..'))
+
+    # Construct the absolute path to config.yaml
+    config_path = os.path.join(parent_directory, 'init_pose_config.yaml')
 
     # Open the YAML file and load its content
     with open(config_path, 'r') as yaml_file:
