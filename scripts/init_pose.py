@@ -52,11 +52,11 @@ def are_odoms_equal(odom1, odom2, tolerance=0.2):
     return x_diff <= tolerance and y_diff <= tolerance and z_diff <= tolerance
 
 def main():
-    parser = argparse.ArgumentParser(description='Initialize pose and perform initial turn')
-    parser.add_argument('yaml_file', type=str, help='Path to YAML file')
+    parser = argparse.ArgumentParser(description='Initialize position and perform initial turn')
+    parser.add_argument('initial_position', type=str, help='Path to YAML file that contains the initial position!')
 
     args = parser.parse_args()
-    yaml_file_path = args.yaml_file
+    yaml_file_path = args.initial_position
 
     # Load values from YAML file
     yaml_data = load_yaml_file(yaml_file_path)
