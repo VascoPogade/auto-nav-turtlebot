@@ -25,11 +25,6 @@ class Angular:
         self.y = y
         self.z = z
 
-def load_yaml_file(file_path):
-    with open(file_path, 'r') as file:
-        data = yaml.safe_load(file)
-    return data
-
 def update_twist(velocity, publisher):
     twist = Twist()
 
@@ -53,13 +48,13 @@ def are_odoms_equal(odom1, odom2, tolerance=0.2):
 
 def main():
     parser = argparse.ArgumentParser(description='Initialize position and perform initial turn')
-    parser.add_argument('initial_position', type=str, help='Path to YAML file that contains the initial position!')
+    parser.add_argument('initial_position', type=argparse.FileType("r"), help='Path to YAML file that contains the initial position!')
 
     args = parser.parse_args()
-    yaml_file_path = args.initial_position
+    yaml_file = args.initial_position
 
     # Load values from YAML file
-    yaml_data = load_yaml_file(yaml_file_path)
+    yaml_data = yaml.safe_load(yaml_file)
 
     # Node initialization
     rospy.init_node('init_pose')
@@ -93,8 +88,8 @@ def main():
 
     def turn():
         while not turned:
-            rospy.sleep(1)
-            ang = Angular(z=0.5)
+            rospy.sleep(0.3)
+            ang = Angular(z=0.8)
             lin = Linear()
             vel = Velocity(angular=ang, linear=lin)
             update_twist(vel, cmd_vel_pub)
@@ -109,7 +104,7 @@ def main():
 
     while not turned:
         odom2 = rospy.wait_for_message('/odom', Odometry)
-        if are_odoms_equal(current_loc, odom2, tolerance=0.02):
+        if are_odoms_equal(current_loc, odom2, tolerance=0.1):
             turned = True
 
     print("Initial pose done!")
