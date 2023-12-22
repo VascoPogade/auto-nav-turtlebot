@@ -7,6 +7,7 @@ from geometry_msgs.msg import Twist
 import threading
 import argparse
 import yaml
+import os
 
 class Velocity:
     def __init__(self, angular, linear):
@@ -86,10 +87,18 @@ def main():
 
     turned = False
 
+    # Specify the path to your YAML file
+    config_path = os.path.abspath('config.yaml')
+
+    # Open the YAML file and load its content
+    with open(config_path, 'r') as yaml_file:
+        config_data = yaml.safe_load(yaml_file)
+    
+
     def turn():
         while not turned:
-            rospy.sleep(0.3)
-            ang = Angular(z=0.8)
+            rospy.sleep(config_data["vel_sleep_duration"])
+            ang = Angular(z=config_data["vel_speed"])
             lin = Linear()
             vel = Velocity(angular=ang, linear=lin)
             update_twist(vel, cmd_vel_pub)
@@ -104,7 +113,7 @@ def main():
 
     while not turned:
         odom2 = rospy.wait_for_message('/odom', Odometry)
-        if are_odoms_equal(current_loc, odom2, tolerance=0.1):
+        if are_odoms_equal(current_loc, odom2, tolerance=config_data["odom_equal_tolerance"]):
             turned = True
 
     print("Initial pose done!")
