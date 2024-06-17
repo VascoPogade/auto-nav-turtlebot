@@ -53,29 +53,34 @@ def move_to_goal(pos_x, pos_y, ori_z, ori_w):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Navigate robot to certain goal')
-    parser.add_argument('pos_x', type=float, help='X coordinate of initial position')
-    parser.add_argument('pos_y', type=float, help='Y coordinate of initial position')
-    parser.add_argument('ori_z', type=float, help='Z value of initial orientation')
-    parser.add_argument('ori_w', type=float, help='W value of initial orientation')
+
+    parser = argparse.ArgumentParser(description='Navigate robot to certain goal. Please supply the goal pose as the name of the pickup point')
+    parser.add_argument('pickup_point', type=str, help='Name of the pickup point')
 
     args = parser.parse_args()
-    pos_x = args.pos_x
-    pos_y = args.pos_y
-    ori_z = args.ori_z
-    ori_w = args.ori_w
+    pickup_point = args.pickup_point
 
     rospy.init_node('goal_pose')
-    pos_x, pos_y, ori_z, ori_w = map(float, sys.argv[1:5])
+    #there may be problems with the missing line of mapping
     print("waiting for status!")
     status_msg = rospy.wait_for_message('/move_base/status', GoalStatusArray)
     print("status received!")
+
     try:
         status = status_msg.status_list[-1].status
     except IndexError:
         status = 41
 
     if status in [2, 3, 4, 5, 8, 41]:
-        move_to_goal(pos_x, pos_y, ori_z, ori_w)
+        if pickup_point == "pickup_point1":
+            move_to_goal(-2.5, -2.5, 0.0, 1.0) #example coordinates
+        elif pickup_point == "pickup_point2":
+            move_to_goal(-2.5, 2.5, 0.0, 1.0) #example coordinates
+        elif pickup_point == "pickup_point3":
+            move_to_goal(2.5, 2.5, 0.0, 1.0) #example coordinates
+        elif pickup_point == "pickup_point4":
+            move_to_goal(2.5, -2.5, 0.0, 1.0) #example coordinates
+        else:
+            rospy.loginfo("Invalid pickup point!")
     else:
         rospy.loginfo("Turtlebot is currently busy!")
