@@ -73,13 +73,17 @@ if __name__ == "__main__":
 
     if status in [2, 3, 4, 5, 8, 41]:
         if pickup_point == "pickup_point1":
-            move_to_goal(-2.5, -2.5, 0.0, 1.0) #example coordinates
+            move_to_goal(11.612991333007812,1.8986226320266724 , -0.6767184325390025, 0.7362419188432261) #example coordinates
         elif pickup_point == "pickup_point2":
-            move_to_goal(-2.5, 2.5, 0.0, 1.0) #example coordinates
+            move_to_goal(-0.38340112566947937,-0.08671373128890991, 0.024248888396507462,  0.999705952473793) #example coordinates
         elif pickup_point == "pickup_point3":
-            move_to_goal(2.5, 2.5, 0.0, 1.0) #example coordinates
+            move_to_goal(14.80724048614502,0.6164495944976807 ,0.026950692485214478, 0.9996367641171304) #example coordinates
         elif pickup_point == "pickup_point4":
-            move_to_goal(2.5, -2.5, 0.0, 1.0) #example coordinates
+            move_to_goal(22.618375778198242,0.4330832362174988,-0.9998970198030099 ,0.014350950806798986) #example coordinates
+        elif pickup_point =="pickup_point5":
+            move_to_goal(7.000452995300293, 1.772918462753296, -0.6893069327700934, 0.7244694282266754)
+        elif pickup_point =="pickup_point6":
+            move_to_goal(20.220516204833984, 1.0709266662597656, -0.999519797879735, 0.030986668850551045)
         else:
             rospy.loginfo("Invalid pickup point!")
     else:
